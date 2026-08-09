@@ -5,6 +5,7 @@ const cors = require("cors");
 const ordersRouter = require("./routes/orders");
 const companiesRouter = require("./routes/companies");
 const adminAuthRouter = require("./routes/adminAuth");
+const backgroundGenRouter = require("./routes/backgroundGen");
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.get("/", (req, res) => {
 app.use("/api/orders", ordersRouter);
 app.use("/api/companies", companiesRouter);
 app.use("/api/admin", adminAuthRouter);
+app.use("/api/generate-background", backgroundGenRouter);
 
 // 마지막 안전망 — 예상 못한 에러가 나도 서버가 죽지 않고 에러 응답만 내려줍니다.
 app.use((err, req, res, next) => {
