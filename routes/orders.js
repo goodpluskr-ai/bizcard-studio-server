@@ -15,7 +15,7 @@ router.post("/", async (req, res) => {
   if (!supabase) return res.status(503).json({ error: "서버에 Supabase가 아직 연결 안 됐어요(환경변수 확인 필요)." });
   const {
     customerPhone, customerName, categoryCode, paperCode, paperChoice,
-    options, sets, memberType, amountTotal, depositorName, shipping, designRecipe,
+    options, sets, memberType, amountTotal, depositorName, shipping, designRecipe, bundlePhone,
   } = req.body || {};
 
   if (!depositorName || !amountTotal) {
@@ -23,6 +23,33 @@ router.post("/", async (req, res) => {
   }
 
   const orderNo = generateOrderNo();
+
+  // 2026-08-16: 묶음배송 — 같은 번호로 접수된 다른 주문이 실제로 있는지 확인합니다.
+  // 없으면(혼자만 신청한 경우) 착불로 나갈 예정이라는 뜻이라, 그 사실을 주문
+  // 레코드에 남기고(bundle_alone) 관리자에게 알림 이메일도 보냅니다.
+  let bundleAlone = false;
+  if (bundlePhone) {
+    const { count, error: bundleCheckError } = await supabase
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("bundle_phone", bundlePhone);
+    if (bundleCheckError) {
+      console.error("[orders] 묶음배송 동료 조회 실패:", bundleCheckError.message);
+    } else {
+      bundleAlone = (count || 0) === 0;
+      // 이 주문 덕분에 동료가 생긴 경우(=이 주문은 혼자가 아님), 먼저 접수돼서
+      // "동료 없음(착불)"으로 잘못 표시돼 있던 이전 주문들도 같이 바로잡아줍니다.
+      if (!bundleAlone) {
+        const { error: fixupError } = await supabase
+          .from("orders")
+          .update({ bundle_alone: false })
+          .eq("bundle_phone", bundlePhone)
+          .eq("bundle_alone", true);
+        if (fixupError) console.error("[orders] 이전 묶음배송 주문 갱신 실패:", fixupError.message);
+      }
+    }
+  }
+
   const { data, error } = await supabase
     .from("orders")
     .insert({
@@ -39,6 +66,14 @@ router.post("/", async (req, res) => {
       depositor_name: depositorName,
       shipping: shipping || {},
       design_recipe: designRecipe || {},
+      // 2026-08-16: "묶음배송" — 전화번호를 기록해두면, 관리자가 입금확인 화면에서
+      // 같은 번호로 묶인 다른 주문이 실제로 있는지 눈으로도 확인할 수 있습니다.
+      // 이 앱은 결제금액(amountTotal)도 클라이언트가 계산한 값을 그대로 믿는 구조라
+      // (서버가 재검증하지 않음), 무료배송 적용 여부 자체는 같은 신뢰 수준으로
+      // 클라이언트 판단을 따르고, 서버는 "동료 주문 존재 여부"만 확인해 착불 여부를
+      // 기록·알림합니다.
+      bundle_phone: bundlePhone || null,
+      bundle_alone: bundleAlone,
       status: "입금대기",
     })
     .select()
@@ -53,6 +88,7 @@ router.post("/", async (req, res) => {
   // (또는 기다리되) 실패해도 응답은 정상으로 내려줍니다.
   const emailResult = await sendOrderNotificationEmail({
     orderNo, depositor: depositorName, categoryName: categoryCode, amountTotal, memberType,
+    bundleAlone,
   });
   if (!emailResult.ok) {
     console.warn("[orders] 이메일 알림은 실패했지만 주문 접수는 정상 처리됨:", orderNo);
