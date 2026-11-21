@@ -56,3 +56,9 @@ Render 무료 웹 서비스는 15분 동안 요청이 없으면 서버가 잠들
 오면 다시 깨어나는 데 30초~1분 정도 걸릴 수 있습니다. 테스트 단계에서는 괜찮지만,
 실제 서비스 오픈 시점에는 유료 플랜(월 7달러부터)으로 올리는 걸 권장합니다 —
 그래야 손님이 결제할 때 서버가 잠들어서 느려지는 일이 없습니다.
+
+## 명함 글자 판독 (2026-11 추가)
+- 주소: `POST /api/ocr-read` — `{ image: "data:image/jpeg;base64,..." }`를 보내면 줄마다 `{ text, type, unsure, unsureChars, suggestion, roughBox }`를 돌려줍니다.
+- 배포 확인: 브라우저로 `https://bizcard-studio-server.onrender.com/api/ocr-read/test`를 열고 명함 사진을 고르면 결과가 나옵니다(1회 약 9원).
+- Render Environment에 **`OPENAI_API_KEY`**가 있어야 합니다. 선택: `OCR_MODEL`(기본 gpt-5.4-mini), `OCR_PRICE_IN`/`OCR_PRICE_OUT`(1백만 토큰당 달러, 기본 0.75/4.5), `OCR_LIMIT_PER_IP_HOUR`(기본 20), `OCR_LIMIT_PER_DAY`(기본 300).
+- 판독 결과는 AI 제안값입니다. 고객이 모든 줄을 확인·확정해야 인쇄에 쓰고, 확정값은 AI가 다시 바꾸지 않습니다. `roughBox`는 대략 위치일 뿐이니 확정 위치로 쓰지 마세요.
