@@ -47,7 +47,7 @@ router.post("/", async (req, res) => {
   if (!result.available) return res.status(502).json({ error: result.error || "판독에 실패했습니다." });
   dayCostUsd += result.costUsd;
   console.log(`[ocr-read] ${result.model} ${result.lines.length}줄 ${result.ms}ms $${result.costUsd.toFixed(4)} (오늘 ${dayCount}회 $${dayCostUsd.toFixed(3)})`);
-  res.json({ lines: result.lines, model: result.model, usage: result.usage, costUsd: result.costUsd, ms: result.ms });
+  res.json({ lines: result.lines, hanjaCard: !!result.hanjaCard, model: result.model, usage: result.usage, costUsd: result.costUsd, ms: result.ms });
 });
 
 // 배포 확인용 간단한 시험 화면: 브라우저로 /api/ocr-read/test 를 열고 명함 사진을 고르면 결과가 나옵니다.
@@ -71,7 +71,7 @@ document.getElementById('f').onchange = async e => {
     const j = await r.json();
     if (!r.ok) { s.textContent = '실패: ' + (j.error || r.status); return; }
     s.textContent = j.model + ' · ' + (j.ms / 1000).toFixed(1) + '초 · $' + j.costUsd.toFixed(4);
-    o.textContent = j.lines.map(l => '[' + l.type + '] ' + (l.text || '(판독 안 함)') + (l.unsure ? (l.hasHanja ? '  ← 확인 필요(한자)' : '  ← 확인 필요') + (l.unsureChars ? ' (' + l.unsureChars + ')' : '') : '') + (l.suggestion ? '  (맞춤법 제안: ' + l.suggestion + ')' : '')).join('\\n');
+    o.textContent = j.lines.map(l => '[' + l.type + '] ' + (l.text || '(판독 안 함)') + (l.unsure ? (l.hasHanja ? '  ← 확인 필요(한자)' : l.hanjaCardCheck ? '  ← 확인 필요(한자 명함: 원래 한자인지)' : '  ← 확인 필요') + (l.unsureChars ? ' (' + l.unsureChars + ')' : '') : '') + (l.suggestion ? '  (맞춤법 제안: ' + l.suggestion + ')' : '')).join('\\n');
   } catch (err) { s.textContent = '실패: ' + err.message; }
 };
 </script></body></html>`);
