@@ -29,7 +29,7 @@ function allow(ip) {
 
 // 명함 사진(정면으로 펴진 JPEG)을 받아 글자를 판독합니다.
 // 요청: { image: "data:image/jpeg;base64,..." }
-// 응답: { lines:[{ text, type, unsure, unsureChars, suggestion, roughBox }], model, usage, costUsd, ms }
+// 응답: { lines:[{ text, type, unsure, hasHanja, unsureChars, suggestion, roughBox }], model, usage, costUsd, ms }
 //  - lines는 "AI 판독값"입니다. 고객이 줄마다 확인·정정해서 확정값으로 저장해야 하며,
 //    확정값은 이후 AI가 다시 판독해도 바꾸지 않습니다.
 //  - roughBox(0~1 비율)는 대략 위치입니다. 확정 위치로 쓰지 마세요(측정 프로그램이 잼).
@@ -71,7 +71,7 @@ document.getElementById('f').onchange = async e => {
     const j = await r.json();
     if (!r.ok) { s.textContent = '실패: ' + (j.error || r.status); return; }
     s.textContent = j.model + ' · ' + (j.ms / 1000).toFixed(1) + '초 · $' + j.costUsd.toFixed(4);
-    o.textContent = j.lines.map(l => '[' + l.type + '] ' + (l.text || '(판독 안 함)') + (l.unsure ? '  ← 확인 필요' + (l.unsureChars ? ' (' + l.unsureChars + ')' : '') : '') + (l.suggestion ? '  (맞춤법 제안: ' + l.suggestion + ')' : '')).join('\\n');
+    o.textContent = j.lines.map(l => '[' + l.type + '] ' + (l.text || '(판독 안 함)') + (l.unsure ? (l.hasHanja ? '  ← 확인 필요(한자)' : '  ← 확인 필요') + (l.unsureChars ? ' (' + l.unsureChars + ')' : '') : '') + (l.suggestion ? '  (맞춤법 제안: ' + l.suggestion + ')' : '')).join('\\n');
   } catch (err) { s.textContent = '실패: ' + err.message; }
 };
 </script></body></html>`);
