@@ -8,6 +8,7 @@ const adminAuthRouter = require("./routes/adminAuth");
 const backgroundGenRouter = require("./routes/backgroundGen");
 const bannerTextRouter = require("./routes/bannerText");
 const ocrReadRouter = require("./routes/ocrRead");
+const orderFilesRouter = require("./routes/orderFiles");
 
 const app = express();
 // Render는 앞단 프록시를 거쳐 요청이 들어오므로, 실제 접속자 IP를 알려면 필요합니다(판독 횟수 제한에 사용).
@@ -31,6 +32,7 @@ app.use("/api/companies", companiesRouter);
 app.use("/api/admin", adminAuthRouter);
 app.use("/api/generate-background", backgroundGenRouter);
 app.use("/api/banner-text", bannerTextRouter);
+app.use("/api/order-files", orderFilesRouter); // 2026-11-25 주문 원본 파일 저장소
 
 // 마지막 안전망 — 예상 못한 에러가 나도 서버가 죽지 않고 에러 응답만 내려줍니다.
 app.use((err, req, res, next) => {
